@@ -1,6 +1,6 @@
 {
   "name": "@pi-in-go/pigpen-pig-model-tweaks",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "PiG model-selection tweaks (Go extension): remember the picked model, pin an OpenRouter model to one provider, guard prompts against a wrong model, use the keyless OpenCode Zen free models, and refresh provider catalogs",
   "keywords": [
     "pig-package",

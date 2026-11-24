@@ -66,6 +66,9 @@ func Extension() *sdk.Extension {
 	registerModelGuard(ext, st)
 	registerRefreshCommands(ext)
 	registerFreeProvider(ext)
+	// The host's built-in OpenCode catalogs can lag behind opencode.ai. Install
+	// the keyless public lists so /model shows what OpenCode serves.
+	registerOpenCodeCatalogs(ext, liveOpenCodeCatalog)
 
 	// A confirmation still open at shutdown is released by the host; this only
 	// stops the extension from starting or reporting another one.

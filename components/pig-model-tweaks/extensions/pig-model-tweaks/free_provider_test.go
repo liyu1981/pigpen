@@ -498,21 +498,6 @@ func TestFreeChatRequestShape(t *testing.T) {
 	}
 }
 
-func TestRefreshCommandHostError(t *testing.T) {
-	host := StartHost(t, Extension(), HostOptions{
-		OnCall: func(method string, args map[string]any) (map[string]any, string) {
-			if method == "refreshModelRegistry" {
-				return nil, "catalog unavailable"
-			}
-			return map[string]any{}, ""
-		},
-	})
-	failure := host.Command(refreshGoName, "")
-	if !strings.Contains(failure, refreshGoName) || !strings.Contains(failure, "catalog unavailable") {
-		t.Errorf("command failure = %q", failure)
-	}
-}
-
 func mustFreeStream(t *testing.T, p *freeProvider, model, transcript map[string]any, opts sdk.ProviderStreamOptions) *sdk.ModelEventStream {
 	t.Helper()
 	stream, err := p.stream(model, transcript, opts)
@@ -520,35 +505,4 @@ func mustFreeStream(t *testing.T, p *freeProvider, model, transcript map[string]
 		t.Fatalf("stream: %v", err)
 	}
 	return stream
-}
-
-func TestRefreshCommandsCallHost(t *testing.T) {
-	for _, target := range refreshTargets {
-		t.Run(target.command, func(t *testing.T) {
-			host := StartHost(t, Extension(), HostOptions{
-				OnCall: func(method string, args map[string]any) (map[string]any, string) {
-					switch method {
-					case "refreshModelRegistry":
-						return map[string]any{"aborted": false, "errors": map[string]any{}}, ""
-					case "getModelRegistryState":
-						return map[string]any{"models": []any{}, "providers": map[string]any{}, "registered": []any{}}, ""
-					default:
-						return map[string]any{}, ""
-					}
-				},
-			})
-			_ = host.Command(target.command, "")
-			calls := host.CallsTo("refreshModelRegistry")
-			if len(calls) != 1 {
-				t.Fatalf("refresh calls = %d, want 1", len(calls))
-			}
-			providers, _ := calls[0].Args["providers"].([]any)
-			if len(providers) != 1 || providers[0] != target.provider {
-				t.Errorf("providers = %v, want [%s]", providers, target.provider)
-			}
-			if calls[0].Args["allowNetwork"] != true || calls[0].Args["force"] != true {
-				t.Errorf("refresh args = %v, want allowNetwork+force", calls[0].Args)
-			}
-		})
-	}
 }

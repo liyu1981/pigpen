@@ -224,12 +224,34 @@ both register the `opencode-free` provider id.
 
 ## Refreshing model catalogs
 
-The three `pmt-refresh-*-models` commands ask the host to refresh one built-in
-provider's catalog with `allowNetwork` and `force` set, through the SDK's public
-`ModelRegistry().Refresh`. They do not write to the host's model store themselves.
-A refresh is per provider: `opencode` is OpenCode Zen, `opencode-go` is its Go
-endpoint, and `openrouter` is OpenRouter. The `opencode-free` provider refreshes
-on its own as part of the host's provider-catalog pass.
+The `opencode` and `opencode-go` catalogs come from OpenCode's own **keyless**
+model lists, not from PiG's catalog service:
+
+- `https://opencode.ai/inference/v1/models` for OpenCode Models (`opencode`)
+- `https://opencode.ai/inference/go/v1/models` for Go (`opencode-go`)
+
+Both lists are public and need no API key. They are fetched when the extension
+loads and again by `/pmt-refresh-opencode-zen-models` and
+`/pmt-refresh-opencode-go-models`; the fetched models are registered onto the
+built-in provider ids, so credentials and request routing stay with the host.
+Each model keeps the protocol and endpoint OpenCode recommends for it. A failed
+fetch leaves the host's own catalog in place — no partial catalog is ever
+installed. The `opencode-free` provider continues to discover the free Zen tier
+from `https://opencode.ai/zen/v1/models`.
+
+`/pmt-refresh-openrouter-models` uses OpenRouter's own public, keyless list:
+`https://openrouter.ai/api/v1/models`. Models the host already knows keep their
+existing config (protocol, endpoint, compat settings, thinking map), so the
+refresh adds models without changing how current ones are served; models that
+have disappeared from OpenRouter's list are left in place rather than removed.
+The PiG catalog service is no longer the source for any of the three commands.
+
+Every refresh command prints a result into the conversation (a displayed message
+that starts no turn, with a toast as immediate feedback). It names the provider,
+the number of models now in its catalog, and which models were added or removed
+— or says plainly that the catalog was already up to date. If the host cannot
+inject a message into the conversation (outside the TUI), the toast carries the
+full result instead.
 
 ## Additions to the pi original
 
