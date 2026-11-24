@@ -47,6 +47,15 @@ original still does what the original does, with the original's texts (scenarios
   is `pmt-settings.json` where the original wrote `pi-tweaks-settings.json`, so the port's identity
   is distinct from the original it can run beside. `eqcopy.sh` (below) swaps them back for the
   equivalence run. There is no filesystem lock between the features. (#15.)
+- **Free-model provider** (`opencode-free`): added after the equivalence goldens were recorded.
+  An independent MIT reimplementation of the behavior of the separate, unchanged GPL-licensed
+  `pi-opencode-free` component — Zen + models.dev discovery, persisted snapshot, keyless Chat
+  Completions and Responses streaming with the OpenCode headers. No source was copied; see
+  `../CREDITS.md`. This is outside the port's contract with `pi-tweaks`.
+- **Catalog refresh commands**: `pmt-refresh-openrouter-models`, `pmt-refresh-opencode-zen-models`
+  and `pmt-refresh-opencode-go-models` call the SDK's `ModelRegistry().Refresh` with
+  `allowNetwork` and `force` for the built-in providers `openrouter`, `opencode` and `opencode-go`.
+  The host owns those catalogs; the extension neither fetches nor writes them itself.
 
 ## Differences that are not additions
 

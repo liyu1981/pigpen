@@ -241,7 +241,7 @@ Status: queued: 2 · porting: 2 · review: 11 · done: 19
 
 ### `pig-model-tweaks`: pig-model-tweaks
 
-- Kind: port. Model-selection tweaks: remember the picked model across sessions, pin an OpenRouter model to one upstream provider, and guard prompts against a model outside the allow-list.
+- Kind: port. Model-selection tweaks: remember the picked model across sessions, pin an OpenRouter model to one upstream provider, guard prompts against a model outside the allow-list, use the keyless OpenCode Zen free models, and refresh the OpenRouter, Zen and Go catalogs.
 - Upstream path: `extensions` in pi-tweaks
 
 ### `pi-opencode-free`: pi-opencode-free

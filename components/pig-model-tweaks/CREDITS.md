@@ -21,3 +21,15 @@ The Go code and its tests were written for this Package by Yu Li. Behavior,
 wording and defaults follow the original; the deliberate differences are listed
 in the Package README. No file of the original is modified; the port is a
 separate implementation.
+
+## Free-model provider and refresh commands
+
+`free_catalog.go`, `free_provider.go`, `free_stream.go`, `free_chat.go`,
+`free_responses.go`, `refresh_commands.go` and their tests are independent MIT
+implementations written for this Package. The idea of a keyless provider for the
+free models on OpenCode Zen, and the behavior of its discovery and streaming, are
+described by [`pi-opencode-free`](../pi-opencode-free) by Pedro Alexis
+(GPL-3.0-or-later, commit `0f4c16bade33106847ae4abd8d2be2d1b0058e36`). No source
+from that GPL-licensed Package was copied into this MIT-licensed Package, and the
+GPL-licensed Package is kept unchanged as a separate component. Thanks are due to
+its author for documenting the Zen free tier.

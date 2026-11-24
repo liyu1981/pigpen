@@ -15,8 +15,8 @@
 // where the original used pt-, and the settings file is pmt-settings.json where
 // the original wrote pi-tweaks-settings.json.
 //
-// It registers commands and event handlers only: no tools, no providers, no
-// renderers.
+// It registers commands, event handlers and one keyless provider for the free
+// models on OpenCode Zen: no tools and no renderers.
 package pigmodeltweaks
 
 import (
@@ -64,6 +64,8 @@ func Extension() *sdk.Extension {
 	registerRememberModel(ext, st)
 	registerOpenRouterLockProvider(ext, st)
 	registerModelGuard(ext, st)
+	registerRefreshCommands(ext)
+	registerFreeProvider(ext)
 
 	// A confirmation still open at shutdown is released by the host; this only
 	// stops the extension from starting or reporting another one.

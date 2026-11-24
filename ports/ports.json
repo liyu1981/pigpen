@@ -653,7 +653,7 @@
       "id": "pig-model-tweaks",
       "name": "pig-model-tweaks",
       "kind": "port",
-      "summary": "Model-selection tweaks: remember the picked model across sessions, pin an OpenRouter model to one upstream provider, and guard prompts against a model outside the allow-list.",
+      "summary": "Model-selection tweaks: remember the picked model across sessions, pin an OpenRouter model to one upstream provider, guard prompts against a model outside the allow-list, use the keyless OpenCode Zen free models, and refresh the OpenRouter, Zen and Go catalogs.",
       "upstream": {
         "name": "pi-tweaks",
         "url": "https://github.com/liyu1981/pi-tweaks",

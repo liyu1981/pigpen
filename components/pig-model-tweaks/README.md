@@ -1,7 +1,8 @@
 # pig-model-tweaks
 
-Three everyday fixes for working with a mixed model set, as a PiG extension Package. All
-state lives in one file; every command uses the `pmt-` prefix.
+Three everyday fixes for working with a mixed model set, plus a keyless provider for
+the free models on OpenCode Zen, as a PiG extension Package. All tweak state lives in
+one file; every command uses the `pmt-` prefix.
 
 1. **PiG forgets your model.** Every new session starts on whatever is in
    `settings.json`, so the model gets re-picked by hand. → `pmt-remember-model`
@@ -15,7 +16,7 @@ state lives in one file; every command uses the `pmt-` prefix.
    question, and a model *selected* outside the list is confirmed before it is
    used (and is never remembered).
 
-It registers commands and event handlers only: no tools, no providers, no
+It registers commands, event handlers and one native provider: no tools and no
 renderers.
 
 ## Provenance and licensing
@@ -44,9 +45,13 @@ which is a different concern from model selection.
 | `/pmt-remember-model [status\|on\|off\|clear]` | Remember and restore the last selected model. |
 | `/pmt-openrouter-lock-provider [<provider>\|clear\|list\|on\|off]` | Manage OpenRouter provider locks, as the original: `<provider>` (the whole argument) locks the current OpenRouter model, `clear` clears its lock. With no arguments in the TUI, a searchable list of the available OpenRouter models and every locked model (with their `provider: x` / `no provider lock` descriptions) opens, then asks for the provider (empty clears). This port also accepts `clear <model>` and `lock <model> <provider>` to name a model. |
 | `/pmt-model-guard-pref [list\|on\|off\|toggle\|add\|remove]` | Manage the allowed-model list, as the original: with no argument a multi-select over the available models sets the whole list; `add` and `remove` open it to add or remove. This port also accepts `ask`, `noask`, `add <provider/model>` and `remove <provider/model>`. |
+| `/pmt-refresh-openrouter-models` | Force the host to re-fetch the OpenRouter model catalog over the network. |
+| `/pmt-refresh-opencode-zen-models` | Force the host to re-fetch the OpenCode Zen model catalog (provider `opencode`). |
+| `/pmt-refresh-opencode-go-models` | Force the host to re-fetch the OpenCode Go model catalog (provider `opencode-go`). |
 
 `status` is the default for `pmt-remember-model`: no argument reports whether it is
-on and what was remembered.
+on and what was remembered. The three refresh commands report the number of models
+the provider now offers, or the host's error.
 
 Every feature defaults to **on** and reports through a toast, so nothing here
 prints into the conversation. Turning `pmt-openrouter-lock-provider` off also stops
@@ -194,11 +199,43 @@ means *switching back*, which the event's `previousModel` makes possible. The
 switch-back emits its own `model_select`; a flag in the store consumes exactly
 that one event so the restored model is never questioned again in a loop.
 
+## Free models on OpenCode Zen
+
+This Package also registers a native provider, `opencode-free`. Its catalog starts
+empty; when the host refreshes provider catalogs it discovers the free ids from
+`https://opencode.ai/zen/v1/models`, enriches them from
+[models.dev](https://models.dev), and publishes the result as `opencode-free/<model>`.
+The snapshot is persisted with the host's model store, so an offline run can restore
+it; a discovery failure keeps the previous snapshot instead of wiping it.
+
+Requests go to Zen's OpenAI-compatible `/chat/completions` and `/responses` endpoints
+with the OpenCode client headers (`x-opencode-client: cli`, `x-opencode-project: global`,
+`User-Agent: opencode/0.0.0-dev`). No API key is needed and no bearer token is ever
+sent. Streaming text, reasoning, tool calls and usage are supported, as are request
+cancellation and the host's `onPayload`/`onResponse` hooks. Models.dev's
+`reasoning_options` become Pi thinking levels; a model routed through
+`@ai-sdk/openai` uses the Responses endpoint. A model with no models.dev entry gets
+conservative defaults (no reasoning, 128,000-token context, 16,384-token output).
+
+This is an independent MIT implementation of that behavior, not a copy of the
+separate GPL-licensed [`pi-opencode-free`](../pi-opencode-free) Package, which is
+left unchanged. See [`CREDITS.md`](CREDITS.md). Install one or the other, not both:
+both register the `opencode-free` provider id.
+
+## Refreshing model catalogs
+
+The three `pmt-refresh-*-models` commands ask the host to refresh one built-in
+provider's catalog with `allowNetwork` and `force` set, through the SDK's public
+`ModelRegistry().Refresh`. They do not write to the host's model store themselves.
+A refresh is per provider: `opencode` is OpenCode Zen, `opencode-go` is its Go
+endpoint, and `openrouter` is OpenRouter. The `opencode-free` provider refreshes
+on its own as part of the host's provider-catalog pass.
+
 ## Additions to the pi original
 
 These are additive features of this component, kept on purpose (owner decision,
-2026-10-20). Everything the original's forms do, they still do, with the original's
-texts.
+2026-10-20; the free provider and refresh commands were added later). Everything
+the original's forms do, they still do, with the original's texts.
 
 - **The model guard asks, and can name a model.** `ask` and `noask` switch the
   refusal of a prompt to a yes/no question and back; `add <provider/model>` and
@@ -218,6 +255,9 @@ texts.
   `pi-tweaks-settings.json`, so this port's identity is distinct from the original
   it can run beside. The port has no filesystem lock between its features; they are
   one Go package sharing one store.
+- **A free-model provider and catalog refresh.** The original has neither. The
+  `opencode-free` provider and the three `pmt-refresh-*-models` commands above were
+  added to this Package as independently written MIT code.
 
 ## Differences from the pi original that are not additions
 
@@ -259,6 +299,9 @@ Then, in a session, confirm the file appears and the model round-trips:
 /pmt-model-guard-pref ask        # or: noask
 /pmt-openrouter-lock-provider lock vendor/model upstream-provider
 /pmt-openrouter-lock-provider list
+/pmt-refresh-openrouter-models
+/pmt-refresh-opencode-zen-models
+/pmt-refresh-opencode-go-models
 ```
 
 Cycle to a model outside the list with `Ctrl+P` and submit a prompt: the prompt
