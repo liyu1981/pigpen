@@ -48,9 +48,10 @@ which is a different concern from model selection.
 | `/pmt-refresh-openrouter-models` | Force the host to re-fetch the OpenRouter model catalog over the network. |
 | `/pmt-refresh-opencode-zen-models` | Force the host to re-fetch the OpenCode Zen model catalog (provider `opencode`). |
 | `/pmt-refresh-opencode-go-models` | Force the host to re-fetch the OpenCode Go model catalog (provider `opencode-go`). |
+| `/pmt-refresh-vercel-models` | Force the host to re-fetch the Vercel AI Gateway model catalog (provider `vercel-ai-gateway`). |
 
 `status` is the default for `pmt-remember-model`: no argument reports whether it is
-on and what was remembered. The three refresh commands report the number of models
+on and what was remembered. The four refresh commands report the number of models
 the provider now offers, or the host's error.
 
 Every feature defaults to **on** and reports through a toast, so nothing here
@@ -244,7 +245,19 @@ from `https://opencode.ai/zen/v1/models`.
 existing config (protocol, endpoint, compat settings, thinking map), so the
 refresh adds models without changing how current ones are served; models that
 have disappeared from OpenRouter's list are left in place rather than removed.
-The PiG catalog service is no longer the source for any of the three commands.
+
+`/pmt-refresh-vercel-models` uses the Vercel AI Gateway's own public, keyless
+list: `https://ai-gateway.vercel.sh/v1/models`. The gateway's built-in catalog
+is generated from that same list and lags it, so the command adds the models
+the gateway published since. It keeps only the chat models: the one list also
+carries image, embedding, speech, realtime and evaluation entries, and a
+language model without tool use would fail at the first tool call. As with
+OpenRouter, models the host already knows keep their host-authored config, and
+a model the gateway no longer publishes stays in place. A model the host does
+not know yet gets what every built-in gateway model has: Anthropic Messages on
+`https://ai-gateway.vercel.sh`, the gateway's `allowEmptySignature` compat,
+per-million costs, and `vision` as its image input.
+The PiG catalog service is no longer the source for any of the four commands.
 
 Every refresh command prints a result into the conversation (a displayed message
 that starts no turn, with a toast as immediate feedback). It names the provider,
@@ -278,7 +291,7 @@ the original's forms do, they still do, with the original's texts.
   it can run beside. The port has no filesystem lock between its features; they are
   one Go package sharing one store.
 - **A free-model provider and catalog refresh.** The original has neither. The
-  `opencode-free` provider and the three `pmt-refresh-*-models` commands above were
+  `opencode-free` provider and the four `pmt-refresh-*-models` commands above were
   added to this Package as independently written MIT code.
 
 ## Differences from the pi original that are not additions
@@ -324,6 +337,7 @@ Then, in a session, confirm the file appears and the model round-trips:
 /pmt-refresh-openrouter-models
 /pmt-refresh-opencode-zen-models
 /pmt-refresh-opencode-go-models
+/pmt-refresh-vercel-models
 ```
 
 Cycle to a model outside the list with `Ctrl+P` and submit a prompt: the prompt

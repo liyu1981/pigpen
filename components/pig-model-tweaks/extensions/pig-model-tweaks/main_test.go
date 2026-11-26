@@ -10,9 +10,9 @@ import (
 // environment the tests run in.
 func TestMain(m *testing.M) {
 	_ = os.Unsetenv("PIG_EXT_HOST_INFO")
-	// Layer-1 tests must never call the live opencode.ai endpoints. A closed
-	// local port makes the session-start catalog sync fail immediately; tests
-	// that exercise the conversion point their own catalog at httptest.
+	// Layer-1 tests must never call the live provider model lists. A closed
+	// local port makes the fetch fail immediately; tests that exercise a
+	// conversion point their own catalog at httptest.
 	liveOpenCodeCatalog = &openCodeCatalog{
 		client: newOpenCodeCatalog().client,
 		zenURL: "http://127.0.0.1:0/zen",
@@ -21,6 +21,10 @@ func TestMain(m *testing.M) {
 	liveOpenRouterCatalog = &openRouterCatalog{
 		client: newOpenRouterCatalog().client,
 		url:    "http://127.0.0.1:0/openrouter",
+	}
+	liveVercelCatalog = &vercelCatalog{
+		client: newVercelCatalog().client,
+		url:    "http://127.0.0.1:0/vercel",
 	}
 	os.Exit(m.Run())
 }

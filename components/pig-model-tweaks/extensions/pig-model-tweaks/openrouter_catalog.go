@@ -145,38 +145,3 @@ func openRouterPrice(raw string) float64 {
 	}
 	return price * 1_000_000
 }
-
-// mergeOpenRouterModels keeps the host's config for models it already knows
-// and adds the ones OpenRouter published that were not in the old catalog.
-// Order follows the API list, with old-only models appended so no alias is
-// silently dropped.
-func mergeOpenRouterModels(existing, fetched []map[string]any) []map[string]any {
-	known := make(map[string]map[string]any, len(existing))
-	for _, model := range existing {
-		if id, _ := model["id"].(string); id != "" {
-			known[id] = model
-		}
-	}
-	out := make([]map[string]any, 0, len(fetched)+len(known))
-	seen := make(map[string]bool, len(fetched))
-	for _, model := range fetched {
-		id, _ := model["id"].(string)
-		if id == "" || seen[id] {
-			continue
-		}
-		seen[id] = true
-		if old, ok := known[id]; ok {
-			out = append(out, old)
-		} else {
-			out = append(out, model)
-		}
-	}
-	for _, model := range existing {
-		id, _ := model["id"].(string)
-		if id != "" && !seen[id] {
-			out = append(out, model)
-			seen[id] = true
-		}
-	}
-	return out
-}

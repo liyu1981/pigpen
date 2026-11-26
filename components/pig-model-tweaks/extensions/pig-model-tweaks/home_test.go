@@ -113,6 +113,10 @@ func restoreHost(t *testing.T, entries []map[string]any) *Host {
 		switch method {
 		case "getModel":
 			return map[string]any{"id": "model-1", "provider": "acme"}, ""
+		case "resolveModel":
+			// SetModelNamed resolves the `provider/id` name before it sets the
+			// model object the host answers with.
+			return map[string]any{"model": map[string]any{"id": "model-1", "provider": "acme"}}, ""
 		case "watchSessionLog":
 			cursor, _ := args["cursor"].(float64)
 			page := entries[min(int(cursor), len(entries)):]
@@ -129,8 +133,13 @@ func TestStartupWithAnEmptyBranchRestoresTheRememberedModel(t *testing.T) {
 	rememberedHome(t)
 	h := restoreHost(t, nil)
 	h.FireAll("session_start", map[string]any{"reason": "startup"})
-	if calls := h.CallsTo("setModel"); len(calls) != 1 || calls[0].Args["model"] != "acme/model-1" {
+	calls := h.CallsTo("setModel")
+	if len(calls) != 1 {
 		t.Fatalf("setModel calls = %v, want one for acme/model-1", calls)
+	}
+	model, _ := calls[0].Args["model"].(map[string]any)
+	if model["id"] != "model-1" || model["provider"] != "acme" {
+		t.Fatalf("setModel model = %v, want acme/model-1", model)
 	}
 }
 

@@ -1,8 +1,9 @@
 package pigmodeltweaks
 
 // Commands that replace a provider's model catalog with the one published by
-// the provider itself. OpenRouter and OpenCode both expose public, keyless
-// model lists; the host keeps ownership of credentials and request routing.
+// the provider itself. OpenRouter, OpenCode and the Vercel AI Gateway all
+// expose public, keyless model lists; the host keeps ownership of credentials
+// and request routing.
 
 import (
 	"context"
@@ -18,12 +19,14 @@ import (
 var (
 	liveOpenCodeCatalog   = newOpenCodeCatalog()
 	liveOpenRouterCatalog = newOpenRouterCatalog()
+	liveVercelCatalog     = newVercelCatalog()
 )
 
 const (
 	refreshOpenRouterName = "pmt-refresh-openrouter-models"
 	refreshZenName        = "pmt-refresh-opencode-zen-models"
 	refreshGoName         = "pmt-refresh-opencode-go-models"
+	refreshVercelName     = "pmt-refresh-vercel-models"
 )
 
 // refreshMessageType is the custom message type used for the visible result of
@@ -41,6 +44,7 @@ var refreshTargets = []struct {
 	{refreshOpenRouterName, "openrouter", "Refreshes the OpenRouter model catalog"},
 	{refreshZenName, "opencode", "Refreshes the OpenCode Zen model catalog"},
 	{refreshGoName, "opencode-go", "Refreshes the OpenCode Go model catalog"},
+	{refreshVercelName, "vercel-ai-gateway", "Refreshes the Vercel AI Gateway model catalog"},
 }
 
 func registerRefreshCommands(ext *sdk.Extension) {
@@ -64,6 +68,8 @@ func refreshProviderModels(ctx sdk.Context, command, provider string) error {
 		err = refreshFromOpenCode(ctx, provider)
 	case "openrouter":
 		err = refreshFromOpenRouter(ctx)
+	case "vercel-ai-gateway":
+		err = refreshFromVercel(ctx)
 	}
 	if err != nil {
 		return fmt.Errorf("%s: %w", command, err)
@@ -101,8 +107,58 @@ func refreshFromOpenRouter(ctx sdk.Context) error {
 	}
 	existing := providerModelConfigs(ctx, "openrouter")
 	return ctx.ModelRegistry().RegisterProvider("openrouter", sdk.ProviderConfig{
-		"models": mergeOpenRouterModels(existing, models),
+		"models": mergeCatalogModels(existing, models),
 	})
+}
+
+// refreshFromVercel merges the AI Gateway's own list with the models the host
+// already knows. Existing models keep their host-authored protocol, endpoint
+// and compat settings; the models the gateway published since the built-in
+// catalog was generated are added with the gateway's defaults.
+func refreshFromVercel(ctx sdk.Context) error {
+	models, err := liveVercelCatalog.load(context.Background())
+	if err != nil {
+		return err
+	}
+	existing := providerModelConfigs(ctx, "vercel-ai-gateway")
+	return ctx.ModelRegistry().RegisterProvider("vercel-ai-gateway", sdk.ProviderConfig{
+		"models": mergeCatalogModels(existing, models),
+	})
+}
+
+// mergeCatalogModels keeps the host's config for models it already knows
+// and adds the ones the provider published that were not in the old catalog.
+// Order follows the API list, with old-only models appended so no alias is
+// silently dropped.
+func mergeCatalogModels(existing, fetched []map[string]any) []map[string]any {
+	known := make(map[string]map[string]any, len(existing))
+	for _, model := range existing {
+		if id, _ := model["id"].(string); id != "" {
+			known[id] = model
+		}
+	}
+	out := make([]map[string]any, 0, len(fetched)+len(known))
+	seen := make(map[string]bool, len(fetched))
+	for _, model := range fetched {
+		id, _ := model["id"].(string)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		if old, ok := known[id]; ok {
+			out = append(out, old)
+		} else {
+			out = append(out, model)
+		}
+	}
+	for _, model := range existing {
+		id, _ := model["id"].(string)
+		if id != "" && !seen[id] {
+			out = append(out, model)
+			seen[id] = true
+		}
+	}
+	return out
 }
 
 // refreshDetail turns the before/after snapshots into a single sentence that

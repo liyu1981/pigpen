@@ -91,6 +91,30 @@ func TestRefreshCommandFallsBackToToastWhenMessageFails(t *testing.T) {
 	}
 }
 
+func TestMergeCatalogModelsPreservesHostConfig(t *testing.T) {
+	existing := []map[string]any{
+		{"id": "anthropic/claude-sonnet-4.5", "api": "anthropic-messages", "baseUrl": "https://openrouter.ai/api", "compat": map[string]any{"forceAdaptiveThinking": true}},
+		{"id": "old/alias", "api": "openai-completions"},
+	}
+	fetched := []map[string]any{
+		{"id": "anthropic/claude-sonnet-4.5", "api": "openai-completions", "baseUrl": "https://openrouter.ai/api/v1"},
+		{"id": "new/model", "api": "openai-completions", "baseUrl": "https://openrouter.ai/api/v1"},
+	}
+	merged := mergeCatalogModels(existing, fetched)
+	if len(merged) != 3 {
+		t.Fatalf("merged = %d, want 3", len(merged))
+	}
+	if merged[0]["api"] != "anthropic-messages" || merged[0]["compat"] == nil {
+		t.Errorf("existing config not preserved: %v", merged[0])
+	}
+	if merged[1]["id"] != "new/model" {
+		t.Errorf("new model = %v", merged[1])
+	}
+	if merged[2]["id"] != "old/alias" {
+		t.Errorf("old-only model = %v", merged[2])
+	}
+}
+
 func TestRefreshDetailReportsNewAndRemovedModels(t *testing.T) {
 	tests := []struct {
 		name         string
